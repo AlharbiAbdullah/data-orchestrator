@@ -1,0 +1,17 @@
+cities:
+  riyadh:
+    lat: 24.7136
+    lon: 46.6753
+    timezone: Asia/Riyadh
+  dubai:
+    lat: 25.2048
+    lon: 55.2708
+    timezone: Asia/Dubai
+  london:
+    lat: 51.5074
+    lon: -0.1278
+    timezone: Europe/London
+  new_york:
+    lat: 40.7128
+    lon: -74.0060
+    timezone: America/New_York

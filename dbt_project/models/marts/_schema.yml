@@ -1,0 +1,37 @@
+version: 2
+
+models:
+  - name: fct_daily_weather
+    description: Fact table with daily weather metrics per city
+    columns:
+      - name: city
+        description: City name
+        tests:
+          - not_null
+      - name: observation_date
+        description: Date of observation
+        tests:
+          - not_null
+      - name: temp_max_c
+        description: Maximum temperature in Celsius
+        tests:
+          - not_null
+      - name: temp_min_c
+        description: Minimum temperature in Celsius
+        tests:
+          - not_null
+
+  - name: fct_city_comparison
+    description: Aggregated weather statistics per city for comparison
+    columns:
+      - name: city
+        description: City name
+        tests:
+          - not_null
+          - unique
+      - name: total_days
+        description: Total days of observations
+        tests:
+          - not_null
+      - name: avg_temperature_c
+        description: Average temperature across all days

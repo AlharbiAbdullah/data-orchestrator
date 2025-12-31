@@ -1,0 +1,44 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw weather data loaded from Open-Meteo API
+    schema: main
+    tables:
+      - name: raw_hourly_weather
+        description: Hourly weather observations
+        columns:
+          - name: city
+            description: City name
+          - name: timestamp
+            description: Observation timestamp
+          - name: temperature_c
+            description: Temperature in Celsius
+          - name: humidity_pct
+            description: Relative humidity percentage
+          - name: precipitation_mm
+            description: Precipitation in millimeters
+          - name: wind_speed_kmh
+            description: Wind speed in km/h
+          - name: weather_code
+            description: WMO weather code
+          - name: extracted_at
+            description: When data was extracted
+
+      - name: raw_daily_weather
+        description: Daily weather aggregates
+        columns:
+          - name: city
+            description: City name
+          - name: date
+            description: Observation date
+          - name: temp_max_c
+            description: Maximum temperature in Celsius
+          - name: temp_min_c
+            description: Minimum temperature in Celsius
+          - name: precipitation_sum_mm
+            description: Total daily precipitation in mm
+          - name: wind_speed_max_kmh
+            description: Maximum wind speed in km/h
+          - name: extracted_at
+            description: When data was extracted

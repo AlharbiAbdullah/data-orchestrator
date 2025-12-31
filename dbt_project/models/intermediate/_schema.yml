@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: int_hourly_enriched
+    description: Hourly weather data enriched with classifications
+    columns:
+      - name: city
+        tests:
+          - not_null
+      - name: observation_timestamp
+        tests:
+          - not_null
+      - name: temp_category
+        tests:
+          - accepted_values:
+              values: ['freezing', 'cold', 'mild', 'warm', 'hot']
+
+  - name: int_daily_enriched
+    description: Daily weather data enriched with classifications
+    columns:
+      - name: city
+        tests:
+          - not_null
+      - name: observation_date
+        tests:
+          - not_null
+      - name: weather_condition
+        tests:
+          - accepted_values:
+              values: ['clear', 'light_rain', 'rainy', 'heavy_rain']

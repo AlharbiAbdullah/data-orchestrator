@@ -1,0 +1,47 @@
+services:
+  dagster-webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dagster-webserver
+    ports:
+      - "3333:3000"
+    environment:
+      - DAGSTER_HOME=/app/.dagster
+      - PYTHONPATH=/app
+    volumes:
+      - ./dagster_project:/app/dagster_project
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./dbt_project:/app/dbt_project
+      - dagster-storage:/app/.dagster
+    command: dagster-webserver -h 0.0.0.0 -p 3000
+    depends_on:
+      - dagster-daemon
+    networks:
+      - dagster-network
+
+  dagster-daemon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dagster-daemon
+    environment:
+      - DAGSTER_HOME=/app/.dagster
+      - PYTHONPATH=/app
+    volumes:
+      - ./dagster_project:/app/dagster_project
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./dbt_project:/app/dbt_project
+      - dagster-storage:/app/.dagster
+    command: dagster-daemon run
+    networks:
+      - dagster-network
+
+volumes:
+  dagster-storage:
+
+networks:
+  dagster-network:
+    driver: bridge

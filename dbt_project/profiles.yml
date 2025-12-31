@@ -1,0 +1,7 @@
+weather_pipeline:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "../data/warehouse/weather.duckdb"
+      threads: 4

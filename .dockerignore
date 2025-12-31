@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+
+# UV
+.uv/
+
+# IDE
+.idea/
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# Dagster local storage
+.dagster/
+storage/
+
+# dbt artifacts
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+
+# Data (will be mounted as volume)
+data/raw/*.json
+data/warehouse/*.duckdb
+
+# Docs and specs
+*.md
+docs/
+
+# Testing
+.pytest_cache/
+.coverage
+.mypy_cache/
+
+# OS
+.DS_Store
