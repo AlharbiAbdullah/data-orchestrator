@@ -1,199 +1,69 @@
-# Data Orchestrator
+# data-orchestrator
 
-End-to-end data pipeline demonstrating modern DataOps practices with Dagster orchestration, dbt transformations, and automated data quality checks.
+Weather pipeline: Dagster pulls Open-Meteo data for four cities into DuckDB and builds tested dbt marts.
 
-## Architecture
+Status: working · learning build · 2026-10
 
-![Data Orchestrator architecture](docs/diagrams/architecture.excalidraw.svg)
+![Dagster runs one job: it reads the city list, fetches each city's weather JSON from the Open-Meteo API, writes a raw file, upserts it into DuckDB, and dbt builds staging, intermediate and marts under 19 tests.](docs/diagrams/architecture.excalidraw.svg)
 
-## Tech Stack
+## What it does
 
-![Data Orchestrator tech stack](docs/diagrams/tech-stack.excalidraw.svg)
+Compares the weather of four cities over a two-week window. It gives daily metrics per city
+and ranks the cities by warmth, rain, wind and humidity.
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Orchestrator | Dagster | Asset-based pipeline management |
-| Transformations | dbt | SQL-based data modeling |
-| Data Quality | dbt tests | Automated validation |
-| Database | DuckDB | Lightweight analytics database |
-| API Client | httpx | Weather data extraction |
-| Package Manager | UV | Fast Python dependency management |
-| Container | Docker | Reproducible deployment |
+## How it works
 
-## Data Flow
+1. **Source.** The Open-Meteo forecast API, no key. Each call returns 7 past days and
+   7 forecast days, hourly and daily: temperature, humidity, precipitation, wind.
+2. **Orchestrate.** Dagster runs the three assets as one job, `daily_weather_pipeline`. Its
+   schedule (06:00 UTC) ships stopped; turn it on in the UI, which shows lineage and run history.
+3. **Extract.** `raw_weather_data` reads the cities from `config/cities.yml`, fetches each
+   with HTTPX, and writes one JSON file per run to `data/raw/`.
+4. **Warehouse.** `staged_weather_data` upserts the newest file into DuckDB, keyed by city and
+   time. `dbt build` then runs staging, intermediate and marts, with 19 tests.
 
-### Extract
-- **Source**: Open-Meteo Weather API (free, no API key)
-- **Cities**: Riyadh, Dubai, London, New York (configurable)
-- **Data**: 7 days historical + 7 days forecast
-- **Output**: JSON files in `data/raw/`
+## Tech stack
 
-### Load
-- Raw JSON → DuckDB staging tables
-- Tables: `raw_hourly_weather`, `raw_daily_weather`
+![Tech stack: Open-Meteo API; Dagster; HTTPX; DuckDB, dbt; uv, Docker](docs/diagrams/tech-stack.excalidraw.svg)
 
-### Transform (dbt)
+## Results
 
-```
-staging/                    intermediate/               marts/
-├── stg_hourly_weather  →  ├── int_hourly_enriched  →  ├── fct_daily_weather
-└── stg_daily_weather   →  └── int_daily_enriched   →  └── fct_city_comparison
-```
+City comparison from the run extracted 2025-12-31, window 2025-12-24 to 2026-01-06
+(the last 7 days are forecast), read from `fct_city_comparison`:
 
-## Quick Start
+| City | Avg temp (°C) | Precipitation (mm) | Clear days | Warmest rank |
+|------|--------------:|-------------------:|-----------:|-------------:|
+| Dubai | 21.3 | 0.1 | 13/14 | 1 |
+| Riyadh | 15.1 | 0.0 | 14/14 | 2 |
+| London | 3.1 | 2.4 | 13/14 | 3 |
+| New York | -0.8 | 19.8 | 8/14 | 4 |
 
-### Option 1: Docker (Recommended)
+## Run it
 
-```bash
-# Clone repository
-git clone https://github.com/AlharbiAbdullah/data-orchestrator
-cd data-orchestrator
+Needs [uv](https://docs.astral.sh/uv/). Python 3.11 is pinned in `.python-version`.
 
-# Start services
-docker-compose up -d
-
-# Open Dagster UI
-open http://localhost:3333
-```
-
-### Option 2: Local Development
-
-```bash
-# Install dependencies
+```sh
 uv sync
-
-# Start Dagster dev server
-uv run dagster dev
-
-# Open Dagster UI
-open http://localhost:3000
+uv run dagster dev    # UI on localhost:3000: materialize all assets
 ```
 
-## Project Structure
+The warehouse lands in `data/warehouse/weather.duckdb`. Docker setup: [docs/docker.md](docs/docker.md).
+
+## Layout
 
 ```
-data-orchestrator/
-├── pyproject.toml              # Python dependencies (UV)
-├── Dockerfile                  # Multi-stage Docker build
-├── docker-compose.yml          # Dagster services
-│
-├── config/
-│   └── cities.yml              # Configurable city coordinates
-│
-├── data/
-│   ├── raw/                    # Raw JSON from API
-│   └── warehouse/              # DuckDB database
-│
-├── dagster_project/
-│   ├── definitions.py          # Dagster entry point
-│   ├── assets/
-│   │   ├── extract.py          # Weather API extraction
-│   │   ├── load.py             # DuckDB loading
-│   │   └── transform.py        # dbt integration
-│   ├── resources/
-│   │   ├── weather_api.py      # API client resource
-│   │   └── duckdb.py           # Database resource
-│   └── schedules/
-│       └── daily.py            # Daily schedule
-│
-└── dbt_project/
-    ├── dbt_project.yml
-    ├── profiles.yml
-    └── models/
-        ├── staging/            # Clean raw data
-        ├── intermediate/       # Enriched with categories
-        └── marts/              # Business-ready tables
+dagster_project/   assets (extract, load, dbt), resources, the daily schedule
+dbt_project/       staging, intermediate and marts models with their tests
+config/            the city list
+data/              raw JSON and the DuckDB file (contents gitignored)
+docs/              configuration, dbt models, Docker, diagrams
 ```
 
-## Configuration
+## Docs
 
-### Adding Cities
-
-Edit `config/cities.yml`:
-
-```yaml
-cities:
-  tokyo:
-    lat: 35.6762
-    lon: 139.6503
-    timezone: Asia/Tokyo
-```
-
-### Schedule
-
-The pipeline runs daily at 6 AM UTC. To change:
-
-```python
-# dagster_project/schedules/daily.py
-cron_schedule="0 6 * * *"  # Modify cron expression
-```
-
-## dbt Models
-
-### Staging Layer
-- `stg_hourly_weather`: Cleaned hourly observations
-- `stg_daily_weather`: Cleaned daily aggregates
-
-### Intermediate Layer
-- `int_hourly_enriched`: + temperature/wind/precipitation categories
-- `int_daily_enriched`: + weather conditions, seasons, weekend flags
-
-### Marts Layer
-- `fct_daily_weather`: Complete daily metrics per city
-- `fct_city_comparison`: City-level statistics and rankings
-
-## Data Quality
-
-19 dbt tests run automatically:
-- `not_null` on key columns
-- `unique` on city comparison
-- `accepted_values` for category enums
-
-## Commands
-
-```bash
-# Docker
-docker-compose up -d          # Start services
-docker-compose down           # Stop services
-docker-compose logs -f        # View logs
-
-# Local development
-uv sync                       # Install dependencies
-uv run dagster dev            # Start Dagster UI
-uv run dbt run                # Run dbt models
-uv run dbt test               # Run dbt tests
-
-# Manual pipeline run
-uv run python -c "
-from dagster import materialize
-from dagster_project.definitions import defs
-# Trigger materialization via UI or API
-"
-```
-
-## Sample Output
-
-### City Comparison
-
-| City | Avg Temp | Precipitation | Clear Days | Rank |
-|------|----------|---------------|------------|------|
-| Dubai | 21.3°C | 0.1mm | 13/14 | #1 |
-| Riyadh | 15.1°C | 0.0mm | 14/14 | #2 |
-| London | 3.1°C | 2.4mm | 13/14 | #3 |
-| New York | -0.8°C | 19.6mm | 9/14 | #4 |
-
-## Dagster UI Features
-
-1. **Asset Graph** - Visualize data lineage
-2. **Runs** - View execution history
-3. **Schedules** - Manage automation
-4. **Assets** - Monitor materialization status
-5. **Logs** - Debug pipeline issues
-
-## Author
-
-**Abdullah Al Harbi** - Data & AI Engineer
-
-## License
-
-MIT
+- [docs/configuration.md](docs/configuration.md): cities, the schedule, the API window, file paths.
+- [docs/dbt-models.md](docs/dbt-models.md): every model by layer, and the 19 tests.
+- [docs/docker.md](docs/docker.md): the two Compose services and their commands.
+- [docs/diagrams/diagrams.py](docs/diagrams/diagrams.py): the scene script behind both diagrams.
+- [spec_data_orchestrator.md](spec_data_orchestrator.md): the plan written before the build.
+  Where it and the code differ, the code is right.
