@@ -4,34 +4,11 @@ End-to-end data pipeline demonstrating modern DataOps practices with Dagster orc
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    DAGSTER ORCHESTRATOR                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   SCHEDULE (Daily @ 6 AM UTC)                                   │
-│        │                                                         │
-│        ▼                                                         │
-│   ┌─────────────┐     ┌─────────────┐     ┌─────────────┐       │
-│   │   EXTRACT   │────▶│    LOAD     │────▶│  TRANSFORM  │       │
-│   │ Weather API │     │   DuckDB    │     │    dbt      │       │
-│   └─────────────┘     └─────────────┘     └─────────────┘       │
-│                                                  │               │
-│                                                  ▼               │
-│                                           ┌─────────────┐       │
-│                                           │  19 TESTS   │       │
-│                                           │ (dbt tests) │       │
-│                                           └─────────────┘       │
-│                                                                  │
-│   DAGSTER UI (http://localhost:3333)                            │
-│   - Asset lineage graph                                          │
-│   - Run history & logs                                           │
-│   - Schedule management                                          │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+![Data Orchestrator architecture](docs/diagrams/architecture.excalidraw.svg)
 
 ## Tech Stack
+
+![Data Orchestrator tech stack](docs/diagrams/tech-stack.excalidraw.svg)
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
